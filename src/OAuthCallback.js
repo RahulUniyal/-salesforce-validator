@@ -6,7 +6,7 @@ function OAuthCallback() {
     const codeVerifier = sessionStorage.getItem('code_verifier');
 
     if (code && codeVerifier) {
-      fetch('http://localhost:5000/auth/token', {
+      fetch('https://sf-backend-7163.onrender.com/auth/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, code_verifier: codeVerifier })
