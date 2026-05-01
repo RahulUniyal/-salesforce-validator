@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const BACKEND_URL = 'https://sf-backend-7163.onrender.com';
+
 function Dashboard() {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -10,17 +12,10 @@ function Dashboard() {
   const fetchRules = async () => {
     setLoading(true);
     try {
-      const query = "SELECT+Id,Active,EntityDefinitionId,ValidationName+FROM+ValidationRule";
       const response = await fetch(
-        `${instanceUrl}/services/data/v59.0/tooling/query?q=${query}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
+        `${BACKEND_URL}/api/rules?instanceUrl=${instanceUrl}&accessToken=${accessToken}`
       );
       const data = await response.json();
-      console.log('API Response:', data);
       console.log('Records:', data.records);
       setRules(data.records || []);
     } catch (error) {
@@ -31,36 +26,21 @@ function Dashboard() {
 
   const toggleRule = async (rule) => {
     try {
-      // Pehle existing metadata fetch karo
       const getResponse = await fetch(
-        `${instanceUrl}/services/data/v59.0/tooling/sobjects/ValidationRule/${rule.Id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
+        `${BACKEND_URL}/api/rules/${rule.Id}?instanceUrl=${instanceUrl}&accessToken=${accessToken}`
       );
       const existingRule = await getResponse.json();
-      const existingMetadata = existingRule.Metadata;
 
-      // Phir update karo
       await fetch(
-        `${instanceUrl}/services/data/v59.0/tooling/sobjects/ValidationRule/${rule.Id}`,
+        `${BACKEND_URL}/api/rules/${rule.Id}?instanceUrl=${instanceUrl}&accessToken=${accessToken}`,
         {
           method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            Metadata: { 
-              ...existingMetadata, 
-              active: !rule.Active 
-            }
+            metadata: { ...existingRule.Metadata, active: !rule.Active }
           }),
         }
       );
-      console.log('Toggle successful!');
       fetchRules();
     } catch (error) {
       console.error('Error:', error);
@@ -74,20 +54,22 @@ function Dashboard() {
       <button onClick={fetchRules}>
         {loading ? 'Loading...' : 'Get Validation Rules'}
       </button>
-         <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-  <button onClick={() => rules.forEach(rule => !rule.Active && toggleRule(rule))}>
-    Enable All
-  </button>
-  <button onClick={() => rules.forEach(rule => rule.Active && toggleRule(rule))}>
-    Disable All
-  </button>
-  <button onClick={() => {
-    sessionStorage.clear();
-    window.location.href = '/';
-  }}>
-    Logout
-  </button>
-</div>
+
+      <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+        <button onClick={() => rules.forEach(rule => !rule.Active && toggleRule(rule))}>
+          Enable All
+        </button>
+        <button onClick={() => rules.forEach(rule => rule.Active && toggleRule(rule))}>
+          Disable All
+        </button>
+        <button onClick={() => {
+          sessionStorage.clear();
+          window.location.href = '/';
+        }}>
+          Logout
+        </button>
+      </div>
+
       <div style={{ marginTop: '30px', width: '80%' }}>
         {rules.length === 0 ? (
           <p>No rules loaded yet. Click button above!</p>
